@@ -17,7 +17,7 @@ print(pdf.description)
 pdf_central = pdf.mkPDF(0)
 
 # Define the scale 
-Q_pdf = 1.25
+Q_pdf = 1.5
 
 # Define a log uniform function
 def loguniform(low=0, high=1, size=None):
@@ -34,8 +34,8 @@ def sample_pdf(n=1000):
     for i in np.random.uniform(0.1,1,n-m): x_pdf.append(i)
     # Construct the sampling
     for x in x_pdf:
-        y_pdf1 = pdf_central.xfxQ(21,x,Q_pdf)                               # gluon
-        y_pdf2 = pdf_central.xfxQ(2,x,Q_pdf)-pdf_central.xfxQ(-2,x,Q_pdf)   # valence u_quark
+        y_pdf1 = pdf_central.xfxQ2(21,x,Q_pdf)/5                                # gluon
+        y_pdf2 = pdf_central.xfxQ2(2,x,Q_pdf)-pdf_central.xfxQ2(-2,x,Q_pdf)     # valence u_quark
         data.append([x,y_pdf1,y_pdf2])
     return np.array(data)
 
@@ -155,13 +155,13 @@ for i in range(numb_training):
         g_plot = sess.run(G_sample, feed_dict={Z: Z_batch})
 
         plt.figure()
-        xax = plt.scatter(x_plot[:,0],x_plot[:,1])
-        gax = plt.scatter(g_plot[:,0],g_plot[:,1])
+        xax_g = plt.scatter(x_plot[:,0],x_plot[:,1],s=16)
+        gax_g = plt.scatter(g_plot[:,0],g_plot[:,1],s=16)
 
-        xaxu = plt.scatter(x_plot[:,0],x_plot[:,2])
-        gaxu = plt.scatter(g_plot[:,0],g_plot[:,2])
+        xax_u = plt.scatter(x_plot[:,0],x_plot[:,2],s=16)
+        gax_u = plt.scatter(g_plot[:,0],g_plot[:,2],s=16)
 
-        plt.legend((xax,gax), ("Real PDF","Generated PDF"))
+        plt.legend((xax_g,gax_g,xax_u,gax_u), ("xg/5 Real PDF","xg/5 Generated PDF","xu_v Real PDF","xu_v Generated PDF"))
         plt.title('Samples at Iteration %d'%i)
         plt.tight_layout()
         plt.savefig('iterations/iteration_%d.png'%i, dpi=250)
