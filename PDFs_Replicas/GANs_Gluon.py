@@ -17,7 +17,7 @@ print(pdf.description)
 pdf_central = pdf.mkPDF(0)
 
 # Define the scale 
-Q_pdf = 1.5
+Q_pdf = 1.25
 
 # Define a log uniform function
 def loguniform(low=0, high=1, size=None):
@@ -34,8 +34,9 @@ def sample_pdf(n=1000):
     for i in np.random.uniform(0.1,1,n-m): x_pdf.append(i)
     # Construct the sampling
     for x in x_pdf:
-        y_pdf = pdf_central.xfxQ(21,x,Q_pdf)
-        data.append([x,y_pdf])
+        y_pdf1 = pdf_central.xfxQ(21,x,Q_pdf)                               # gluon
+        y_pdf2 = pdf_central.xfxQ(2,x,Q_pdf)-pdf_central.xfxQ(-2,x,Q_pdf)   # valence u_quark
+        data.append([x,y_pdf1,y_pdf2])
     return np.array(data)
 
 # Define the function which samples the Data
@@ -67,7 +68,7 @@ def generator(input_noise, layers_size=hidden,reuse=False):
         L2 = tf.layers.dense(L1,layers_size[1],activation=tf.nn.leaky_relu)
         # Define the output layer with 2 nodes
         # This dimension is correspond to the dimension of the "real dataset"
-        output = tf.layers.dense(L2,2)
+        output = tf.layers.dense(L2,3)
 
     return output
 
@@ -84,7 +85,7 @@ def discriminator(input_true,layers_size=hidden,reuse=False):
         L1 = tf.layers.dense(input_true,layers_size[0],activation=tf.nn.leaky_relu)
         L2 = tf.layers.dense(L1,layers_size[1],activation=tf.nn.leaky_relu)
         # Fix the third layer to 2 nodes so we can visualize the transformed feature space in a 2D plane
-        L3 = tf.layers.dense(L2,2)
+        L3 = tf.layers.dense(L2,3)
         # Define the output layer (logit)
         output = tf.layers.dense(L3,1)
 
@@ -93,9 +94,9 @@ def discriminator(input_true,layers_size=hidden,reuse=False):
 # Adversarial Training
 
 # Initialize the placeholder for the real sample
-X = tf.placeholder(tf.float32,[None,2])
+X = tf.placeholder(tf.float32,[None,3])
 # Initialize the placeholder for the random sample
-Z = tf.placeholder(tf.float32,[None,2])
+Z = tf.placeholder(tf.float32,[None,3])
 
 # Define the Graph which Generate fake data from the Generator and feed the Discriminator
 G_sample = generator(Z)
@@ -134,7 +135,7 @@ numb_training = 10001
 # Training
 for i in range(numb_training):
     X_batch = sample_pdf(n=batch_size)
-    Z_batch = sample_noise(batch_size, 2)
+    Z_batch = sample_noise(batch_size, 3)
 
     # Train independently G&D in multiple steps
     for _ in range(nd_steps):
@@ -156,6 +157,9 @@ for i in range(numb_training):
         plt.figure()
         xax = plt.scatter(x_plot[:,0],x_plot[:,1])
         gax = plt.scatter(g_plot[:,0],g_plot[:,1])
+
+        xaxu = plt.scatter(x_plot[:,0],x_plot[:,2])
+        gaxu = plt.scatter(g_plot[:,0],g_plot[:,2])
 
         plt.legend((xax,gax), ("Real PDF","Generated PDF"))
         plt.title('Samples at Iteration %d'%i)
