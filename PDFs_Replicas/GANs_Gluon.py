@@ -17,7 +17,7 @@ print(pdf.description)
 pdf_central = pdf.mkPDF(0)
 
 # Define the scale 
-Q_pdf = 1.5
+Q_pdf = 10
 
 # Define a log uniform function
 def loguniform(low=0, high=1, size=None):
