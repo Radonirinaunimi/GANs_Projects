@@ -36,7 +36,8 @@ def sample_pdf(n=1000):
     for x in x_pdf:
         y_pdf1 = pdf_central.xfxQ2(21,x,Q_pdf)/5                                # gluon
         y_pdf2 = pdf_central.xfxQ2(2,x,Q_pdf)-pdf_central.xfxQ2(-2,x,Q_pdf)     # valence u_quark
-        data.append([x,y_pdf1,y_pdf2])
+        y_pdf3 = pdf_central.xfxQ2(1,x,Q_pdf)-pdf_central.xfxQ2(-1,x,Q_pdf)     # valence u_quark
+        data.append([x,y_pdf1,y_pdf2,y_pdf3])
     return np.array(data)
 
 # Define the function which samples the Data
@@ -53,6 +54,10 @@ def sorting(lst):
 
 # Define the hidden layers 
 hidden = [16,16]
+# Take the data shape
+data_shape = sample_pdf().shape[1]
+
+
 # Implement the GENERATOR Model
 
 # The following function takes the follwoing as input:
@@ -66,10 +71,9 @@ def generator(input_noise, layers_size=hidden,reuse=False):
         # Define the 1st and 2nd layer with "leaky_relu" as an activation fucnction
         L1 = tf.layers.dense(input_noise,layers_size[0],activation=tf.nn.leaky_relu)
         L2 = tf.layers.dense(L1,layers_size[1],activation=tf.nn.leaky_relu)
-        # Define the output layer with 2 nodes
+        # Define the output layer with data_shape nodes
         # This dimension is correspond to the dimension of the "real dataset"
-        output = tf.layers.dense(L2,3)
-
+        output = tf.layers.dense(L2,data_shape)
     return output
 
 # Implement the DISCRIMINATOR Model
@@ -85,18 +89,17 @@ def discriminator(input_true,layers_size=hidden,reuse=False):
         L1 = tf.layers.dense(input_true,layers_size[0],activation=tf.nn.leaky_relu)
         L2 = tf.layers.dense(L1,layers_size[1],activation=tf.nn.leaky_relu)
         # Fix the third layer to 2 nodes so we can visualize the transformed feature space in a 2D plane
-        L3 = tf.layers.dense(L2,3)
+        L3 = tf.layers.dense(L2,data_shape)
         # Define the output layer (logit)
         output = tf.layers.dense(L3,1)
-
     return output, L3
 
 # Adversarial Training
 
 # Initialize the placeholder for the real sample
-X = tf.placeholder(tf.float32,[None,3])
+X = tf.placeholder(tf.float32,[None,data_shape])
 # Initialize the placeholder for the random sample
-Z = tf.placeholder(tf.float32,[None,3])
+Z = tf.placeholder(tf.float32,[None,data_shape])
 
 # Define the Graph which Generate fake data from the Generator and feed the Discriminator
 G_sample = generator(Z)
@@ -135,7 +138,7 @@ numb_training = 10001
 # Training
 for i in range(numb_training):
     X_batch = sample_pdf(n=batch_size)
-    Z_batch = sample_noise(batch_size, 3)
+    Z_batch = sample_noise(batch_size,data_shape)
 
     # Train independently G&D in multiple steps
     for _ in range(nd_steps):
@@ -155,13 +158,16 @@ for i in range(numb_training):
         g_plot = sess.run(G_sample, feed_dict={Z: Z_batch})
 
         plt.figure()
-        xax_g = plt.scatter(x_plot[:,0],x_plot[:,1],s=16)
-        gax_g = plt.scatter(g_plot[:,0],g_plot[:,1],s=16)
+        xax_g = plt.scatter(x_plot[:,0],x_plot[:,1],s=14)
+        gax_g = plt.scatter(g_plot[:,0],g_plot[:,1],s=14)
 
-        xax_u = plt.scatter(x_plot[:,0],x_plot[:,2],s=16)
-        gax_u = plt.scatter(g_plot[:,0],g_plot[:,2],s=16)
+        xax_u = plt.scatter(x_plot[:,0],x_plot[:,2],s=14)
+        gax_u = plt.scatter(g_plot[:,0],g_plot[:,2],s=14)
 
-        plt.legend((xax_g,gax_g,xax_u,gax_u), ("xg/5 Real PDF","xg/5 Generated PDF","xu_v Real PDF","xu_v Generated PDF"))
+        xax_d = plt.scatter(x_plot[:,0],x_plot[:,3],s=14)
+        gax_d = plt.scatter(g_plot[:,0],g_plot[:,3],s=14)
+
+        plt.legend((xax_g,gax_g,xax_u,gax_u,xax_d,gax_d), ("xg/5 Real PDF","xg/5 Generated PDF","xu_v Real PDF","xu_v Generated PDF","xd_v Real PDF","xd_v Generated PDF"))
         plt.title('Samples at Iteration %d'%i)
         plt.tight_layout()
         plt.savefig('iterations/iteration_%d.png'%i, dpi=250)
